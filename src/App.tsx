@@ -21,6 +21,17 @@ import OrderConfirmation from "./pages/OrderConfirmation";
 import Orders from "./pages/Orders";
 import Profile from "./pages/Profile";
 
+// New Pages
+import About from "./pages/About";
+import Contact from "./pages/Contact";
+import Careers from "./pages/Careers";
+import Blog from "./pages/Blog";
+import Help from "./pages/Help";
+import Returns from "./pages/Returns";
+import Policy from "./pages/Policy";
+import Terms from "./pages/Terms";
+import Favorites from "./pages/Favorites";
+
 const queryClient = new QueryClient();
 
 const App = () => (
@@ -38,6 +49,16 @@ const App = () => (
               <Route path="/brands/:slug" element={<BrandPage />} />
               <Route path="/products/:slug" element={<ProductDetailPage />} />
               <Route path="/auth" element={<Auth />} />
+              
+              {/* New public pages */}
+              <Route path="/about" element={<About />} />
+              <Route path="/contact" element={<Contact />} />
+              <Route path="/careers" element={<Careers />} />
+              <Route path="/blog" element={<Blog />} />
+              <Route path="/help" element={<Help />} />
+              <Route path="/returns" element={<Returns />} />
+              <Route path="/policy" element={<Policy />} />
+              <Route path="/terms" element={<Terms />} />
               
               {/* Protected routes */}
               <Route 
@@ -77,6 +98,14 @@ const App = () => (
                 element={
                   <ProtectedRoute>
                     <Profile />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/favorites" 
+                element={
+                  <ProtectedRoute>
+                    <Favorites />
                   </ProtectedRoute>
                 } 
               />

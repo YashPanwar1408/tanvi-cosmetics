@@ -11,6 +11,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Form,
   FormControl,
@@ -29,6 +30,9 @@ const checkoutSchema = z.object({
   city: z.string().min(1, "City is required"),
   state: z.string().min(1, "State is required"),
   zip: z.string().min(1, "ZIP code is required"),
+  screenshotConfirmation: z.boolean().refine(value => value === true, {
+    message: "You must confirm that you've sent the payment screenshot"
+  })
 });
 
 type CheckoutFormValues = z.infer<typeof checkoutSchema>;
@@ -51,6 +55,7 @@ export default function CheckoutPage() {
       city: "",
       state: "",
       zip: "",
+      screenshotConfirmation: false
     },
   });
 
@@ -109,14 +114,14 @@ export default function CheckoutPage() {
 
       if (orderItemsError) throw orderItemsError;
 
-      // 3. Create payment record - add payment_method field
+      // 3. Create payment record with payment_method
       const { error: paymentError } = await supabase
         .from("payments")
         .insert({
           order_id: orderData.id,
           amount: cartTotal,
           status: "pending",
-          payment_method: "upi", // Adding the required payment_method field
+          payment_method: "upi",
         });
 
       if (paymentError) throw paymentError;
@@ -134,28 +139,17 @@ export default function CheckoutPage() {
   };
 
   const onSubmit = async (data: CheckoutFormValues) => {
-    setIsProcessing(true);
-    const order = await createOrder(data);
-    setIsProcessing(false);
-
-    if (order) {
-      await clearCart();
-      navigate(`/order-confirmation/${order.id}`);
-    }
-  };
-
-  const handleDirectOrder = async () => {
-    if (!form.formState.isValid) {
+    if (!data.screenshotConfirmation) {
       toast({
-        title: "Missing Information",
-        description: "Please fill out all required shipping details",
+        title: "Screenshot confirmation required",
+        description: "Please confirm that you have shared the payment screenshot",
         variant: "destructive",
       });
       return;
     }
 
     setIsProcessing(true);
-    const order = await createOrder(form.getValues());
+    const order = await createOrder(data);
     setIsProcessing(false);
 
     if (order) {
@@ -316,29 +310,37 @@ export default function CheckoutPage() {
                         <p className="text-lg font-bold">8527296771</p>
                       </div>
                     </div>
+
+                    <FormField
+                      control={form.control}
+                      name="screenshotConfirmation"
+                      render={({ field }) => (
+                        <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md p-4 border">
+                          <FormControl>
+                            <Checkbox
+                              checked={field.value}
+                              onCheckedChange={field.onChange}
+                            />
+                          </FormControl>
+                          <div className="space-y-1 leading-none">
+                            <FormLabel>
+                              I confirm that I have sent the payment screenshot to 8527296771
+                            </FormLabel>
+                            <FormMessage />
+                          </div>
+                        </FormItem>
+                      )}
+                    />
                   </div>
 
-                  <div className="flex flex-col gap-4">
-                    <Button 
-                      type="submit" 
-                      className="w-full" 
-                      size="lg"
-                      disabled={isProcessing}
-                    >
-                      {isProcessing ? "Processing..." : "Place Order"}
-                    </Button>
-                    
-                    <Button 
-                      type="button"
-                      variant="outline" 
-                      className="w-full" 
-                      size="lg"
-                      onClick={handleDirectOrder}
-                      disabled={isProcessing}
-                    >
-                      Skip payment and proceed to confirmation
-                    </Button>
-                  </div>
+                  <Button 
+                    type="submit" 
+                    className="w-full" 
+                    size="lg"
+                    disabled={isProcessing}
+                  >
+                    {isProcessing ? "Processing..." : "Place Order"}
+                  </Button>
                 </form>
               </Form>
             </div>
