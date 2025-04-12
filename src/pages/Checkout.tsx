@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
@@ -59,7 +58,11 @@ export default function CheckoutPage() {
     navigate("/cart");
   }
 
-  const onSubmit = async (data: CheckoutFormValues) => {
+  const getProductPrice = (product: any) => {
+    return product.salePrice || product.price;
+  };
+
+  const createOrder = async (data: CheckoutFormValues) => {
     if (!user) {
       toast({
         title: "Authentication required",
@@ -67,12 +70,10 @@ export default function CheckoutPage() {
         variant: "destructive",
       });
       navigate("/auth");
-      return;
+      return null;
     }
 
     try {
-      setIsProcessing(true);
-
       // 1. Create order
       const { data: orderData, error: orderError } = await supabase
         .from("orders")
@@ -92,7 +93,7 @@ export default function CheckoutPage() {
 
       if (orderError) throw orderError;
 
-      // 2. Create order items - add UUID for each item
+      // 2. Create order items
       const orderItems = cartItems.map((item) => ({
         id: crypto.randomUUID(),
         order_id: orderData.id,
@@ -113,65 +114,52 @@ export default function CheckoutPage() {
         .insert({
           order_id: orderData.id,
           amount: cartTotal,
-          payment_method: "upi",
           status: "pending",
         });
 
       if (paymentError) throw paymentError;
 
-      // 4. Clear the user's cart
-      await clearCart();
-
-      // 5. Show success message and redirect
-      toast({
-        title: "Order placed successfully!",
-        description: "Thank you for your order.",
-      });
-
-      // Redirect to order confirmation page
-      navigate(`/order-confirmation/${orderData.id}`);
+      return orderData;
     } catch (error) {
-      console.error("Checkout error:", error);
+      console.error("Order creation error:", error);
       toast({
         title: "Checkout failed",
         description: "There was a problem processing your order. Please try again.",
         variant: "destructive",
       });
-    } finally {
-      setIsProcessing(false);
+      return null;
     }
   };
 
-  // Skip form submission and directly place an order
-  const handleDirectOrder = async () => {
-    if (!user) {
-      toast({
-        title: "Authentication required",
-        description: "Please sign in to complete your order",
-        variant: "destructive",
-      });
-      navigate("/auth");
-      return;
-    }
+  const onSubmit = async (data: CheckoutFormValues) => {
+    setIsProcessing(true);
+    const order = await createOrder(data);
+    setIsProcessing(false);
 
+    if (order) {
+      await clearCart();
+      navigate(`/order-confirmation/${order.id}`);
+    }
+  };
+
+  const handleDirectOrder = async () => {
     if (!form.formState.isValid) {
       toast({
-        title: "Missing information",
+        title: "Missing Information",
         description: "Please fill out all required shipping details",
         variant: "destructive",
       });
       return;
     }
 
-    await onSubmit(form.getValues());
-  };
+    setIsProcessing(true);
+    const order = await createOrder(form.getValues());
+    setIsProcessing(false);
 
-  // Helper function to safely get product price
-  const getProductPrice = (product: any) => {
-    if ('salePrice' in product && product.salePrice) {
-      return product.salePrice;
+    if (order) {
+      await clearCart();
+      navigate(`/order-confirmation/${order.id}`);
     }
-    return product.price;
   };
 
   return (
