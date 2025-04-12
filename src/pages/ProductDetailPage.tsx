@@ -1,40 +1,104 @@
 
-import { useState } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useParams, Link, useNavigate } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
-import { getProductById, getRelatedProducts, getBrandById } from "@/data/products";
 import { Heart, Share2, Minus, Plus, ChevronDown, ChevronUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/components/ui/use-toast";
 import ProductGrid from "@/components/products/ProductGrid";
+import { supabase } from "@/integrations/supabase/client";
+import { useCart } from "@/contexts/CartContext";
+
+interface Product {
+  id: string;
+  name: string;
+  price: number;
+  description: string;
+  image: string;
+  brand: string;
+  category: string;
+  featured: boolean;
+  stock_quantity: number;
+  rating: number;
+  reviews_count: number;
+}
+
+interface ProductVariant {
+  id: string;
+  name: string;
+  colorHex?: string;
+  inStock: boolean;
+  imageUrl?: string;
+}
 
 const ProductDetailPage = () => {
   const { slug } = useParams<{ slug: string }>();
-  const product = getProductById(slug || "");
   const { toast } = useToast();
+  const navigate = useNavigate();
+  const { addToCart } = useCart();
+  
+  const [product, setProduct] = useState<Product | null>(null);
+  const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
+  
+  // For demo purposes, create mock variants
+  const variants: ProductVariant[] = [
+    { id: "1", name: "Standard", inStock: true },
+    { id: "2", name: "Premium", inStock: true },
+    { id: "3", name: "Deluxe", inStock: false },
+  ];
   
   const [selectedVariant, setSelectedVariant] = useState(
-    product?.variants[0]?.id || ""
+    variants[0]?.id || ""
   );
   const [quantity, setQuantity] = useState(1);
   const [expandedSection, setExpandedSection] = useState<string | null>("description");
   
-  if (!product) {
-    return (
-      <Layout>
-        <div className="container mx-auto px-4 py-16 text-center">
-          <h2 className="font-serif text-3xl mb-4">Product Not Found</h2>
-          <p>The product you're looking for doesn't exist.</p>
-        </div>
-      </Layout>
-    );
-  }
+  useEffect(() => {
+    const fetchProduct = async () => {
+      try {
+        const { data, error } = await supabase
+          .from("products")
+          .select("*")
+          .eq("id", slug)
+          .single();
+          
+        if (error) {
+          throw error;
+        }
+        
+        setProduct(data);
+        
+        // Fetch related products
+        const { data: relatedData, error: relatedError } = await supabase
+          .from("products")
+          .select("*")
+          .eq("category", data.category)
+          .neq("id", data.id)
+          .limit(4);
+          
+        if (!relatedError) {
+          setRelatedProducts(relatedData || []);
+        }
+      } catch (error) {
+        console.error("Error fetching product:", error);
+        toast({
+          title: "Error",
+          description: "Failed to load product details",
+          variant: "destructive",
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    if (slug) {
+      fetchProduct();
+    }
+  }, [slug, toast]);
   
-  const brand = getBrandById(product.brandId);
-  const relatedProducts = getRelatedProducts(product.categoryId, product.id);
-  
-  const selectedVariantDetails = product.variants.find(
+  const selectedVariantDetails = variants.find(
     (v) => v.id === selectedVariant
   );
   
@@ -45,8 +109,8 @@ const ProductDetailPage = () => {
     }
   };
   
-  const addToCart = () => {
-    if (!selectedVariantDetails?.inStock) {
+  const handleAddToCart = async () => {
+    if (!selectedVariantDetails?.inStock || !product) {
       toast({
         title: "Out of Stock",
         description: "This product variant is currently unavailable.",
@@ -55,15 +119,51 @@ const ProductDetailPage = () => {
       return;
     }
     
-    toast({
-      title: "Added to Cart",
-      description: `${product.name} has been added to your cart.`,
-    });
+    await addToCart(product.id, quantity);
   };
   
   const toggleSection = (section: string) => {
     setExpandedSection((prev) => (prev === section ? null : section));
   };
+  
+  if (loading) {
+    return (
+      <Layout>
+        <div className="container mx-auto px-4 py-16 flex justify-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+        </div>
+      </Layout>
+    );
+  }
+  
+  if (!product) {
+    return (
+      <Layout>
+        <div className="container mx-auto px-4 py-16 text-center">
+          <h2 className="font-serif text-3xl mb-4">Product Not Found</h2>
+          <p>The product you're looking for doesn't exist.</p>
+          <Button onClick={() => navigate("/shop")} className="mt-4">
+            Back to Shop
+          </Button>
+        </div>
+      </Layout>
+    );
+  }
+  
+  // Create mock data for UI demonstration
+  const benefits = [
+    "High quality materials",
+    "Long-lasting performance",
+    "Easy to use and maintain",
+    "Environmentally friendly"
+  ];
+
+  const ingredients = "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.";
+  
+  const usage = "Apply to clean skin, gently massage in circular motions, and rinse thoroughly with warm water.";
+  
+  // Use actual product images or fallback to the single image
+  const imageUrls = product.image ? [product.image] : [];
   
   return (
     <Layout>
@@ -73,13 +173,13 @@ const ProductDetailPage = () => {
           <div className="space-y-4">
             <div className="aspect-square bg-gray-100 rounded-lg overflow-hidden">
               <img
-                src={selectedVariantDetails?.imageUrl || product.imageUrls[0]}
+                src={selectedVariantDetails?.imageUrl || product.image}
                 alt={product.name}
                 className="w-full h-full object-cover"
               />
             </div>
             <div className="grid grid-cols-4 gap-2">
-              {product.imageUrls.map((imageUrl, index) => (
+              {imageUrls.map((imageUrl, index) => (
                 <div
                   key={index}
                   className="aspect-square bg-gray-100 rounded-lg overflow-hidden cursor-pointer"
@@ -98,10 +198,10 @@ const ProductDetailPage = () => {
           <div>
             <div className="mb-4">
               <Link
-                to={`/brands/${brand?.slug}`}
+                to={`/brands/${product.brand}`}
                 className="text-sm text-gray-500 hover:text-primary"
               >
-                {brand?.name}
+                {product.brand}
               </Link>
               <h1 className="font-serif text-3xl font-medium mt-1 mb-2">
                 {product.name}
@@ -124,31 +224,22 @@ const ProductDetailPage = () => {
                   ))}
                 </div>
                 <span className="text-sm text-gray-500">
-                  {product.rating} ({product.reviewCount} reviews)
+                  {product.rating} ({product.reviews_count} reviews)
                 </span>
               </div>
               <div className="text-2xl font-medium mb-6">
-                {product.salePrice ? (
-                  <div className="flex items-center">
-                    <span>₹{product.salePrice}</span>
-                    <span className="text-gray-500 line-through ml-3 text-lg">
-                      ₹{product.price}
-                    </span>
-                  </div>
-                ) : (
-                  <span>₹{product.price}</span>
-                )}
+                <span>₹{product.price}</span>
               </div>
             </div>
             
             {/* Variant Selection */}
-            {product.variants.length > 1 && (
+            {variants.length > 1 && (
               <div className="mb-6">
                 <h3 className="text-sm font-medium mb-3">
-                  {product.variants[0].colorHex ? "Shade" : "Variant"}
+                  {variants[0].colorHex ? "Shade" : "Variant"}
                 </h3>
                 <div className="flex flex-wrap gap-2">
-                  {product.variants.map((variant) => (
+                  {variants.map((variant) => (
                     <button
                       key={variant.id}
                       className={`rounded-full p-1 transition-all ${
@@ -197,7 +288,7 @@ const ProductDetailPage = () => {
                 </button>
               </div>
               <div className="text-sm">
-                {selectedVariantDetails?.inStock ? (
+                {product.stock_quantity > 0 ? (
                   <span className="text-green-600">In Stock</span>
                 ) : (
                   <span className="text-red-600">Out of Stock</span>
@@ -208,8 +299,8 @@ const ProductDetailPage = () => {
             {/* Add to cart button */}
             <div className="flex flex-col sm:flex-row gap-4 mb-8">
               <Button
-                onClick={addToCart}
-                disabled={!selectedVariantDetails?.inStock}
+                onClick={handleAddToCart}
+                disabled={product.stock_quantity <= 0}
                 className="flex-grow py-6"
                 size="lg"
               >
@@ -243,11 +334,11 @@ const ProductDetailPage = () => {
                   <div className="mt-3 text-gray-700">
                     <p>{product.description}</p>
                     
-                    {product.benefits.length > 0 && (
+                    {benefits.length > 0 && (
                       <div className="mt-4">
                         <h4 className="font-medium mb-2">Key Benefits</h4>
                         <ul className="list-disc pl-5 space-y-1">
-                          {product.benefits.map((benefit, index) => (
+                          {benefits.map((benefit, index) => (
                             <li key={index}>{benefit}</li>
                           ))}
                         </ul>
@@ -271,7 +362,7 @@ const ProductDetailPage = () => {
                 </button>
                 {expandedSection === "ingredients" && (
                   <div className="mt-3 text-gray-700">
-                    <p className="text-sm">{product.ingredients}</p>
+                    <p className="text-sm">{ingredients}</p>
                   </div>
                 )}
               </div>
@@ -290,7 +381,7 @@ const ProductDetailPage = () => {
                 </button>
                 {expandedSection === "usage" && (
                   <div className="mt-3 text-gray-700">
-                    <p>{product.usage}</p>
+                    <p>{usage}</p>
                   </div>
                 )}
               </div>
@@ -299,10 +390,37 @@ const ProductDetailPage = () => {
         </div>
         
         {/* Related Products */}
-        <div className="border-t pt-12">
-          <h2 className="section-title mb-8">You Might Also Like</h2>
-          <ProductGrid products={relatedProducts} />
-        </div>
+        {relatedProducts.length > 0 && (
+          <div className="border-t pt-12">
+            <h2 className="section-title mb-8">You Might Also Like</h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {relatedProducts.map((product) => (
+                <div key={product.id} className="bg-white rounded-lg shadow-sm border overflow-hidden">
+                  <Link to={`/products/${product.id}`} className="block">
+                    <div className="aspect-square bg-gray-100 overflow-hidden">
+                      <img
+                        src={product.image || "/placeholder.svg"}
+                        alt={product.name}
+                        className="w-full h-full object-cover transition-transform hover:scale-105"
+                      />
+                    </div>
+                    <div className="p-4">
+                      <div className="text-sm text-gray-500 mb-1">{product.brand}</div>
+                      <h3 className="font-medium mb-2">{product.name}</h3>
+                      <div className="flex justify-between items-center">
+                        <span className="font-bold">₹{product.price}</span>
+                        <div className="flex items-center">
+                          <span className="text-yellow-400 mr-1">★</span>
+                          <span className="text-sm">{product.rating}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </Link>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     </Layout>
   );
