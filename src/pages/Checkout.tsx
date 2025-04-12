@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
@@ -108,13 +109,14 @@ export default function CheckoutPage() {
 
       if (orderItemsError) throw orderItemsError;
 
-      // 3. Create payment record
+      // 3. Create payment record - add payment_method field
       const { error: paymentError } = await supabase
         .from("payments")
         .insert({
           order_id: orderData.id,
           amount: cartTotal,
           status: "pending",
+          payment_method: "upi", // Adding the required payment_method field
         });
 
       if (paymentError) throw paymentError;
