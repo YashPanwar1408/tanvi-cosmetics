@@ -1,4 +1,6 @@
 
+import { Brand, brands } from "./brands";
+
 export interface ProductVariant {
   id: string;
   name: string;
