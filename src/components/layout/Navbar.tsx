@@ -1,8 +1,7 @@
-
 import { useState, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Menu, X, Search, ShoppingBag, User, Heart } from "lucide-react";
-import { useMobile } from "@/hooks/use-mobile";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -25,7 +24,7 @@ const navigation = [
 ];
 
 export default function Navbar() {
-  const isMobile = useMobile();
+  const isMobile = useIsMobile();
   const [open, setOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const location = useLocation();
@@ -62,10 +61,8 @@ export default function Navbar() {
         isScrolled ? "bg-white shadow" : "bg-white/80 backdrop-blur-md"
       }`}
     >
-      {/* Top bar with logo and nav */}
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-24">
-          {/* Mobile menu button */}
           {isMobile && (
             <button
               className="text-gray-600 focus:outline-none"
@@ -75,14 +72,12 @@ export default function Navbar() {
             </button>
           )}
 
-          {/* Logo */}
           <div className="flex-shrink-0">
             <Link to="/" className="font-serif text-2xl font-bold">
               Tanvi Traders
             </Link>
           </div>
 
-          {/* Desktop navigation */}
           {!isMobile && (
             <nav className="hidden md:flex items-center space-x-8">
               {navigation.map((item) => (
@@ -101,16 +96,13 @@ export default function Navbar() {
             </nav>
           )}
 
-          {/* Right side icons */}
           <div className="flex items-center space-x-4">
-            {/* Search button (mobile) */}
             {isMobile && (
               <button className="text-gray-600 hover:text-primary">
                 <Search size={20} />
               </button>
             )}
 
-            {/* Search bar (desktop) */}
             {!isMobile && (
               <form onSubmit={handleSearch} className="hidden md:block">
                 <div className="relative">
@@ -126,7 +118,6 @@ export default function Navbar() {
               </form>
             )}
 
-            {/* User account */}
             {user ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -158,12 +149,10 @@ export default function Navbar() {
               </Link>
             )}
 
-            {/* Wishlist */}
             <Link to="/wishlist" className="text-gray-600 hover:text-primary">
               <Heart size={20} />
             </Link>
 
-            {/* Cart */}
             <Link to="/cart" className="text-gray-600 hover:text-primary relative">
               <ShoppingBag size={20} />
               {cartCount > 0 && (
@@ -176,7 +165,6 @@ export default function Navbar() {
         </div>
       </div>
 
-      {/* Mobile menu */}
       {isMobile && open && (
         <div className="fixed inset-0 bg-white z-50 flex flex-col">
           <div className="flex items-center justify-between p-4 border-b">

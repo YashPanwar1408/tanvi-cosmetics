@@ -48,6 +48,24 @@ export default function CartPage() {
     navigate("/checkout");
   };
 
+  const getProductImage = (item: any) => {
+    // Handle both local product and DB product types
+    if ('imageUrls' in item.product && item.product.imageUrls?.length > 0) {
+      return item.product.imageUrls[0];
+    } else if ('image' in item.product) {
+      return item.product.image;
+    }
+    return "/placeholder.svg";
+  };
+
+  const getProductPrice = (item: any) => {
+    // Handle both local product and DB product types
+    if ('salePrice' in item.product) {
+      return item.product.salePrice || item.product.price;
+    }
+    return item.product.price;
+  };
+
   return (
     <Layout>
       <div className="container mx-auto px-4 py-8">
@@ -88,7 +106,7 @@ export default function CartPage() {
                         <TableCell className="font-medium">
                           <div className="flex items-center">
                             <img
-                              src={item.product?.imageUrls?.[0] || item.product?.image || "/placeholder.svg"}
+                              src={getProductImage(item)}
                               alt={item.product?.name}
                               className="w-16 h-16 object-cover rounded-md mr-4"
                             />
@@ -96,7 +114,7 @@ export default function CartPage() {
                           </div>
                         </TableCell>
                         <TableCell>
-                          ₹{item.product?.salePrice || item.product?.price}
+                          ₹{getProductPrice(item)}
                         </TableCell>
                         <TableCell>
                           <div className="flex items-center border rounded-md w-[100px]">
@@ -118,7 +136,7 @@ export default function CartPage() {
                           </div>
                         </TableCell>
                         <TableCell>
-                          ₹{(item.product?.salePrice || item.product?.price) * item.quantity}
+                          ₹{getProductPrice(item) * item.quantity}
                         </TableCell>
                         <TableCell>
                           <Button

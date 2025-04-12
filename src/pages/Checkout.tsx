@@ -100,12 +100,15 @@ export default function CheckoutPage() {
 
       if (orderError) throw orderError;
 
-      // 2. Create order items
+      // 2. Create order items - add UUID for each item
       const orderItems = cartItems.map((item) => ({
+        id: crypto.randomUUID(),
         order_id: orderData.id,
         product_id: item.product_id,
         quantity: item.quantity,
-        price: item.product?.salePrice || item.product?.price || 0,
+        price: 'salePrice' in item.product ? 
+                (item.product.salePrice || item.product.price) : 
+                item.product.price,
       }));
 
       const { error: orderItemsError } = await supabase

@@ -5,11 +5,28 @@ import { useAuth } from "./AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { Product } from "@/data/products";
 
+// Define a separate type for database products
+interface DBProduct {
+  id: string;
+  name: string;
+  price: number;
+  description: string | null;
+  image: string;
+  brand: string;
+  category: string | null;
+  featured: boolean | null;
+  stock_quantity: number;
+  rating: number | null;
+  reviews_count: number | null;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface CartItem {
   id: string;
   product_id: string;
   quantity: number;
-  product: Product;
+  product: Product | DBProduct;
 }
 
 interface CartContextType {
@@ -33,7 +50,13 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   const cartCount = cartItems.reduce((total, item) => total + item.quantity, 0);
   const cartTotal = cartItems.reduce(
-    (total, item) => total + (item.product?.salePrice || item.product?.price || 0) * item.quantity,
+    (total, item) => {
+      // Check if it's a DB product or local product and access price accordingly
+      const price = 'salePrice' in item.product ? 
+                    (item.product.salePrice || item.product.price) : 
+                    item.product.price;
+      return total + price * item.quantity;
+    },
     0
   );
 
@@ -70,12 +93,12 @@ export function CartProvider({ children }: { children: ReactNode }) {
             
             return {
               ...item,
-              product: products || {} as Product,
+              product: products || {} as DBProduct,
             };
           })
         );
 
-        setCartItems(itemsWithProducts);
+        setCartItems(itemsWithProducts as CartItem[]);
       } catch (error) {
         console.error("Error fetching cart:", error);
         toast({
