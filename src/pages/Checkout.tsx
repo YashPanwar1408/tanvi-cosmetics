@@ -29,10 +29,6 @@ const checkoutSchema = z.object({
   city: z.string().min(1, "City is required"),
   state: z.string().min(1, "State is required"),
   zip: z.string().min(1, "ZIP code is required"),
-  paymentMethod: z.enum(["credit_card", "cash_on_delivery"]),
-  cardNumber: z.string().optional(),
-  cardExpiry: z.string().optional(),
-  cardCvc: z.string().optional(),
 });
 
 type CheckoutFormValues = z.infer<typeof checkoutSchema>;
@@ -55,10 +51,6 @@ export default function CheckoutPage() {
       city: "",
       state: "",
       zip: "",
-      paymentMethod: "credit_card",
-      cardNumber: "",
-      cardExpiry: "",
-      cardCvc: "",
     },
   });
 
@@ -121,8 +113,8 @@ export default function CheckoutPage() {
         .insert({
           order_id: orderData.id,
           amount: cartTotal,
-          payment_method: data.paymentMethod,
-          status: data.paymentMethod === "cash_on_delivery" ? "pending" : "completed",
+          payment_method: "upi",
+          status: "pending",
         });
 
       if (paymentError) throw paymentError;
@@ -148,6 +140,30 @@ export default function CheckoutPage() {
     } finally {
       setIsProcessing(false);
     }
+  };
+
+  // Skip form submission and directly place an order
+  const handleDirectOrder = async () => {
+    if (!user) {
+      toast({
+        title: "Authentication required",
+        description: "Please sign in to complete your order",
+        variant: "destructive",
+      });
+      navigate("/auth");
+      return;
+    }
+
+    if (!form.formState.isValid) {
+      toast({
+        title: "Missing information",
+        description: "Please fill out all required shipping details",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    await onSubmit(form.getValues());
   };
 
   // Helper function to safely get product price
@@ -289,105 +305,50 @@ export default function CheckoutPage() {
                   </div>
 
                   <div className="pt-6 border-t">
-                    <h2 className="font-serif text-xl mb-6">Payment Method</h2>
+                    <h2 className="font-serif text-xl mb-6">Payment Information</h2>
                     
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                      <div
-                        className={`border rounded-lg p-4 cursor-pointer ${
-                          form.watch("paymentMethod") === "credit_card"
-                            ? "border-primary bg-primary/5"
-                            : ""
-                        }`}
-                        onClick={() => form.setValue("paymentMethod", "credit_card")}
-                      >
-                        <div className="flex items-center">
-                          <input
-                            type="radio"
-                            checked={form.watch("paymentMethod") === "credit_card"}
-                            onChange={() => {}}
-                            className="h-4 w-4 text-primary border-gray-300"
-                          />
-                          <span className="ml-2 font-medium">Credit Card</span>
-                        </div>
+                    <div className="flex flex-col items-center mb-6">
+                      <div className="text-center mb-4">
+                        <p className="font-medium mb-2">Scan the QR code to pay via UPI</p>
+                        <p className="text-sm text-gray-500 mb-4">UPI ID: devanshb3456@okhdfcbank</p>
                       </div>
                       
-                      <div
-                        className={`border rounded-lg p-4 cursor-pointer ${
-                          form.watch("paymentMethod") === "cash_on_delivery"
-                            ? "border-primary bg-primary/5"
-                            : ""
-                        }`}
-                        onClick={() => form.setValue("paymentMethod", "cash_on_delivery")}
-                      >
-                        <div className="flex items-center">
-                          <input
-                            type="radio"
-                            checked={form.watch("paymentMethod") === "cash_on_delivery"}
-                            onChange={() => {}}
-                            className="h-4 w-4 text-primary border-gray-300"
-                          />
-                          <span className="ml-2 font-medium">Cash on Delivery</span>
-                        </div>
+                      <div className="mb-6 max-w-xs">
+                        <img 
+                          src="/lovable-uploads/53aaebf1-d5fe-49e6-96e4-1276658173dc.png" 
+                          alt="UPI QR Code" 
+                          className="rounded-lg shadow-sm w-full"
+                        />
+                      </div>
+                      
+                      <div className="text-center mt-4">
+                        <p className="font-medium mb-1">After payment, please send a screenshot to:</p>
+                        <p className="text-lg font-bold">8527296771</p>
                       </div>
                     </div>
-                    
-                    {form.watch("paymentMethod") === "credit_card" && (
-                      <div className="space-y-4">
-                        <FormField
-                          control={form.control}
-                          name="cardNumber"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Card Number</FormLabel>
-                              <FormControl>
-                                <Input placeholder="Card number" {...field} />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                        
-                        <div className="grid grid-cols-2 gap-4">
-                          <FormField
-                            control={form.control}
-                            name="cardExpiry"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel>Expiry Date</FormLabel>
-                                <FormControl>
-                                  <Input placeholder="MM/YY" {...field} />
-                                </FormControl>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-                          
-                          <FormField
-                            control={form.control}
-                            name="cardCvc"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel>CVC</FormLabel>
-                                <FormControl>
-                                  <Input placeholder="CVC" {...field} />
-                                </FormControl>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-                        </div>
-                      </div>
-                    )}
                   </div>
 
-                  <Button 
-                    type="submit" 
-                    className="w-full mt-8" 
-                    size="lg"
-                    disabled={isProcessing}
-                  >
-                    {isProcessing ? "Processing..." : "Place Order"}
-                  </Button>
+                  <div className="flex flex-col gap-4">
+                    <Button 
+                      type="submit" 
+                      className="w-full" 
+                      size="lg"
+                      disabled={isProcessing}
+                    >
+                      {isProcessing ? "Processing..." : "Place Order"}
+                    </Button>
+                    
+                    <Button 
+                      type="button"
+                      variant="outline" 
+                      className="w-full" 
+                      size="lg"
+                      onClick={handleDirectOrder}
+                      disabled={isProcessing}
+                    >
+                      Skip payment and proceed to confirmation
+                    </Button>
+                  </div>
                 </form>
               </Form>
             </div>

@@ -5,7 +5,7 @@ import Layout from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { CheckCircle2 } from "lucide-react";
+import { CheckCircle2, AlertTriangle } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 
 interface OrderItem {
@@ -39,6 +39,7 @@ export default function OrderConfirmationPage() {
   const { user } = useAuth();
   const [order, setOrder] = useState<Order | null>(null);
   const [loading, setLoading] = useState(true);
+  const [paymentInfo, setPaymentInfo] = useState<{ status: string } | null>(null);
 
   useEffect(() => {
     const fetchOrder = async () => {
@@ -71,6 +72,17 @@ export default function OrderConfirmationPage() {
 
         if (itemsError) {
           throw new Error("Failed to fetch order items");
+        }
+
+        // Fetch payment status
+        const { data: paymentData, error: paymentError } = await supabase
+          .from("payments")
+          .select("status, payment_method")
+          .eq("order_id", orderId)
+          .single();
+
+        if (!paymentError && paymentData) {
+          setPaymentInfo(paymentData);
         }
 
         setOrder({
@@ -139,6 +151,19 @@ export default function OrderConfirmationPage() {
             </p>
           </div>
 
+          {paymentInfo?.status === "pending" && (
+            <div className="mb-8 p-4 bg-amber-50 border border-amber-200 rounded-md">
+              <div className="flex items-center gap-2 mb-2">
+                <AlertTriangle className="h-5 w-5 text-amber-500" />
+                <h3 className="font-medium">Payment Pending</h3>
+              </div>
+              <p className="text-sm text-gray-600 mb-4">
+                Please complete your payment by scanning the UPI QR code and send a screenshot to 8527296771.
+              </p>
+              <p className="text-sm font-medium">UPI ID: devanshb3456@okhdfcbank</p>
+            </div>
+          )}
+
           <div className="border-t border-b py-4 mb-6">
             <div className="flex justify-between mb-2">
               <span className="font-medium">Order Number:</span>
@@ -189,6 +214,19 @@ export default function OrderConfirmationPage() {
             <p className="mt-2">{order.contact_email}</p>
             {order.contact_phone && <p>{order.contact_phone}</p>}
           </div>
+
+          {paymentInfo?.payment_method === "upi" && (
+            <div className="mb-6">
+              <h2 className="font-serif text-xl mb-4">Payment Information</h2>
+              <p>Payment Method: UPI</p>
+              <p className="mt-2">
+                <span className="font-medium">UPI ID:</span> devanshb3456@okhdfcbank
+              </p>
+              <p className="mt-1">
+                <span className="font-medium">Contact Number for Payment Screenshot:</span> 8527296771
+              </p>
+            </div>
+          )}
 
           <div className="flex justify-center mt-8">
             <Button asChild>
