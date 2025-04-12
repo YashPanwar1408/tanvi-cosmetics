@@ -1,14 +1,30 @@
-// Update this page (the content is just a fallback if you fail to update the page)
 
-const Index = () => {
+import Layout from "@/components/layout/Layout";
+import HeroSlider from "@/components/home/HeroSlider";
+import TrendingProducts from "@/components/home/TrendingProducts";
+import BrandShowcase from "@/components/home/BrandShowcase";
+import NewsletterSection from "@/components/home/NewsletterSection";
+import ProductGrid from "@/components/products/ProductGrid";
+import { getNewArrivalProducts } from "@/data/products";
+
+const HomePage = () => {
+  const newArrivals = getNewArrivalProducts();
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100">
-      <div className="text-center">
-        <h1 className="text-4xl font-bold mb-4">Welcome to Your Blank App</h1>
-        <p className="text-xl text-gray-600">Start building your amazing project here!</p>
+    <Layout>
+      <HeroSlider />
+      
+      <TrendingProducts />
+      
+      <div className="container mx-auto px-4 py-16">
+        <ProductGrid products={newArrivals} title="New Arrivals" />
       </div>
-    </div>
+      
+      <BrandShowcase />
+      
+      <NewsletterSection />
+    </Layout>
   );
 };
 
-export default Index;
+export default HomePage;
