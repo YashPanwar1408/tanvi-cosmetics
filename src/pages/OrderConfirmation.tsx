@@ -33,13 +33,18 @@ interface Order {
   items: OrderItem[];
 }
 
+interface PaymentInfo {
+  status: string;
+  payment_method?: string; // Make payment_method optional
+}
+
 export default function OrderConfirmationPage() {
   const { orderId } = useParams<{ orderId: string }>();
   const { toast } = useToast();
   const { user } = useAuth();
   const [order, setOrder] = useState<Order | null>(null);
   const [loading, setLoading] = useState(true);
-  const [paymentInfo, setPaymentInfo] = useState<{ status: string } | null>(null);
+  const [paymentInfo, setPaymentInfo] = useState<PaymentInfo | null>(null);
 
   useEffect(() => {
     const fetchOrder = async () => {
@@ -82,7 +87,7 @@ export default function OrderConfirmationPage() {
           .single();
 
         if (!paymentError && paymentData) {
-          setPaymentInfo(paymentData);
+          setPaymentInfo(paymentData as PaymentInfo);
         }
 
         setOrder({
