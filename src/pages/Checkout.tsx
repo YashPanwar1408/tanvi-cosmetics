@@ -106,9 +106,7 @@ export default function CheckoutPage() {
         order_id: orderData.id,
         product_id: item.product_id,
         quantity: item.quantity,
-        price: 'salePrice' in item.product ? 
-                (item.product.salePrice || item.product.price) : 
-                item.product.price,
+        price: getProductPrice(item.product),
       }));
 
       const { error: orderItemsError } = await supabase
@@ -150,6 +148,14 @@ export default function CheckoutPage() {
     } finally {
       setIsProcessing(false);
     }
+  };
+
+  // Helper function to safely get product price
+  const getProductPrice = (product: any) => {
+    if ('salePrice' in product && product.salePrice) {
+      return product.salePrice;
+    }
+    return product.price;
   };
 
   return (
@@ -401,7 +407,7 @@ export default function CheckoutPage() {
                       </p>
                     </div>
                     <p>
-                      ₹{(item.product?.salePrice || item.product?.price) * item.quantity}
+                      ₹{getProductPrice(item.product) * item.quantity}
                     </p>
                   </div>
                 ))}
