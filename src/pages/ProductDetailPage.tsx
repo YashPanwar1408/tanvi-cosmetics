@@ -9,6 +9,7 @@ import { useToast } from "@/components/ui/use-toast";
 import ProductGrid from "@/components/products/ProductGrid";
 import { supabase } from "@/integrations/supabase/client";
 import { useCart } from "@/contexts/CartContext";
+import { getProductById } from "@/data/products";
 
 interface Product {
   id: string;
@@ -58,6 +59,31 @@ const ProductDetailPage = () => {
   useEffect(() => {
     const fetchProduct = async () => {
       try {
+        // First, check if we can find the product in our mock data
+        const mockProduct = getProductById(slug || "");
+        
+        if (mockProduct) {
+          // If found in mock data, use it
+          const mockDbProduct = {
+            id: mockProduct.id,
+            name: mockProduct.name,
+            price: mockProduct.price,
+            description: mockProduct.description,
+            image: mockProduct.imageUrls[0] || "/placeholder.svg",
+            brand: mockProduct.brandId,
+            category: mockProduct.categoryId,
+            featured: mockProduct.featured,
+            stock_quantity: 10, // Default value
+            rating: mockProduct.rating,
+            reviews_count: mockProduct.reviewCount,
+          };
+          
+          setProduct(mockDbProduct);
+          setLoading(false);
+          return;
+        }
+        
+        // If not found in mock data, try to fetch from database
         const { data, error } = await supabase
           .from("products")
           .select("*")
@@ -83,11 +109,7 @@ const ProductDetailPage = () => {
         }
       } catch (error) {
         console.error("Error fetching product:", error);
-        toast({
-          title: "Error",
-          description: "Failed to load product details",
-          variant: "destructive",
-        });
+        navigate("/not-found");
       } finally {
         setLoading(false);
       }
@@ -96,7 +118,7 @@ const ProductDetailPage = () => {
     if (slug) {
       fetchProduct();
     }
-  }, [slug, toast]);
+  }, [slug, navigate, toast]);
   
   const selectedVariantDetails = variants.find(
     (v) => v.id === selectedVariant
@@ -141,7 +163,7 @@ const ProductDetailPage = () => {
       <Layout>
         <div className="container mx-auto px-4 py-16 text-center">
           <h2 className="font-serif text-3xl mb-4">Product Not Found</h2>
-          <p>The product you're looking for doesn't exist.</p>
+          <p>The product you're looking for doesn't exist or has been removed.</p>
           <Button onClick={() => navigate("/shop")} className="mt-4">
             Back to Shop
           </Button>
@@ -173,7 +195,7 @@ const ProductDetailPage = () => {
           <div className="space-y-4">
             <div className="aspect-square bg-gray-100 rounded-lg overflow-hidden">
               <img
-                src={selectedVariantDetails?.imageUrl || product.image}
+                src={selectedVariantDetails?.imageUrl || product.image || "/placeholder.svg"}
                 alt={product.name}
                 className="w-full h-full object-cover"
               />
@@ -212,7 +234,7 @@ const ProductDetailPage = () => {
                     <svg
                       key={i}
                       className={`w-5 h-5 ${
-                        i < Math.round(product.rating)
+                        i < Math.round(product.rating || 0)
                           ? "text-yellow-400"
                           : "text-gray-300"
                       }`}
@@ -224,7 +246,7 @@ const ProductDetailPage = () => {
                   ))}
                 </div>
                 <span className="text-sm text-gray-500">
-                  {product.rating} ({product.reviews_count} reviews)
+                  {product.rating || 0} ({product.reviews_count || 0} reviews)
                 </span>
               </div>
               <div className="text-2xl font-medium mb-6">
@@ -288,7 +310,7 @@ const ProductDetailPage = () => {
                 </button>
               </div>
               <div className="text-sm">
-                {product.stock_quantity > 0 ? (
+                {(product.stock_quantity || 0) > 0 ? (
                   <span className="text-green-600">In Stock</span>
                 ) : (
                   <span className="text-red-600">Out of Stock</span>
@@ -300,7 +322,7 @@ const ProductDetailPage = () => {
             <div className="flex flex-col sm:flex-row gap-4 mb-8">
               <Button
                 onClick={handleAddToCart}
-                disabled={product.stock_quantity <= 0}
+                disabled={(product.stock_quantity || 0) <= 0}
                 className="flex-grow py-6"
                 size="lg"
               >

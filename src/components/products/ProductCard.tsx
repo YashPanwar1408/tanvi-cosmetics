@@ -12,10 +12,10 @@ export default function ProductCard({ product }: ProductCardProps) {
   // Function to get product ID - works for both mock data and DB products
   const getProductId = (product: Product) => {
     // If it's already a UUID, use it directly
-    if (product.id && product.id.includes('-')) {
+    if (product.id && typeof product.id === 'string') {
       return product.id;
     }
-    return product.id;
+    return product.slug || product.id;
   };
   
   return (
