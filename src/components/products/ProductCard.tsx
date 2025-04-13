@@ -1,14 +1,16 @@
-
 import { Heart } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Product } from "@/data/products";
+import { useCart } from "@/contexts/CartContext";
 
 interface ProductCardProps {
   product: Product;
 }
 
 export default function ProductCard({ product }: ProductCardProps) {
+  const { addToCart } = useCart();
+
   // Function to get product ID - works for both mock data and DB products
   const getProductId = (product: Product) => {
     // If it's already a UUID, use it directly
@@ -16,6 +18,10 @@ export default function ProductCard({ product }: ProductCardProps) {
       return product.id;
     }
     return product.slug || product.id;
+  };
+
+  const handleAddToCart = () => {
+    addToCart(product.id, 1); // Add 1 quantity of the product
   };
   
   return (
@@ -99,7 +105,9 @@ export default function ProductCard({ product }: ProductCardProps) {
           </div>
         </div>
         
-        <Button className="w-full mt-4">Add to Cart</Button>
+        <Button className="w-full mt-4" onClick={handleAddToCart}>
+          Add to Cart
+        </Button>
       </div>
     </div>
   );

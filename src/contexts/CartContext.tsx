@@ -1,4 +1,3 @@
-
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./AuthContext";
@@ -125,17 +124,17 @@ export function CartProvider({ children }: { children: ReactNode }) {
     }
 
     try {
-      // Check if item already exists in cart
+      // Check if item already exists in the cart
       const existingItemIndex = cartItems.findIndex(
         (item) => item.product_id === productId
       );
 
       if (existingItemIndex >= 0) {
-        // Update existing item
+        // Update the quantity of the existing item
         const newQuantity = cartItems[existingItemIndex].quantity + quantity;
         await updateQuantity(cartItems[existingItemIndex].id, newQuantity);
       } else {
-        // Add new item to cart
+        // Add a new item to the cart
         const { data, error } = await supabase.from("cart").insert([
           {
             user_id: user.id,
@@ -144,19 +143,16 @@ export function CartProvider({ children }: { children: ReactNode }) {
           },
         ]).select();
 
-        if (error) {
-          throw error;
-        }
+        if (error) throw error;
 
         if (data && data[0]) {
-          // Get product details
+          // Fetch product details and update local state
           const { data: productData } = await supabase
             .from("products")
             .select("*")
             .eq("id", productId)
             .single();
 
-          // Add new item to local state
           setCartItems([
             ...cartItems,
             { ...data[0], product: productData as unknown as Product },

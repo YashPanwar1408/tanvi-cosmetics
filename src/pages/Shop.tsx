@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
@@ -9,6 +8,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { X } from "lucide-react";
+import { useCart } from "@/contexts/CartContext";
 
 interface Product {
   id: string;
@@ -41,6 +41,7 @@ const ShopPage = () => {
   const [brands, setBrands] = useState<Brand[]>([]);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
+  const { addToCart } = useCart();
 
   // Filters
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
@@ -423,6 +424,12 @@ const ShopPage = () => {
                         </div>
                       </div>
                     </a>
+                    <Button
+                      className="w-full mt-4"
+                      onClick={() => addToCart(product.id, 1)}
+                    >
+                      Add to Cart
+                    </Button>
                   </div>
                 ))}
               </div>
