@@ -23,7 +23,7 @@ export default function ProductCard({ product }: ProductCardProps) {
       <div className="product-card-image-container">
         <Link to={`/products/${getProductId(product)}`}>
           <img 
-            src={product.imageUrls?.[0] || product.image || "/placeholder.svg"} 
+            src={product.imageUrls?.[0] || "/placeholder.svg"} 
             alt={product.name} 
             className="h-60 w-full object-cover"
           />
@@ -56,8 +56,8 @@ export default function ProductCard({ product }: ProductCardProps) {
       </div>
       
       <div className="p-4">
-        <Link to={`/brands/${getBrandSlug(product.brandId) || product.brand}`} className="text-xs font-medium text-gray-500 hover:text-primary transition-colors">
-          {getBrandName(product.brandId) || product.brand?.toUpperCase()}
+        <Link to={`/brands/${getBrandSlug(product.brandId)}`} className="text-xs font-medium text-gray-500 hover:text-primary transition-colors">
+          {getBrandName(product.brandId)}
         </Link>
         
         <h3 className="font-medium mt-1 mb-2">
