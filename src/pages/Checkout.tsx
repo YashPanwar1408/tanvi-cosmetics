@@ -115,14 +115,14 @@ export default function CheckoutPage() {
 
       if (orderItemsError) throw orderItemsError;
 
-      // 3. Create payment record with payment_method
+      // 3. Create payment record with payment_method explicitly set to "upi"
       const { error: paymentError } = await supabase
         .from("payments")
         .insert({
           order_id: orderData.id,
           amount: cartTotal,
           status: "pending",
-          payment_method: "upi", // Always set the payment_method to "upi"
+          payment_method: "upi", // Explicitly set payment_method
         });
 
       if (paymentError) throw paymentError;
@@ -151,6 +151,7 @@ export default function CheckoutPage() {
       
       if (order) {
         await clearCart();
+        // Show success toast using sonner for better visibility
         toast.success("Order confirmed!", {
           description: "Please check your orders to see order details."
         });
