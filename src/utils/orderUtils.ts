@@ -31,7 +31,10 @@ export async function createOrder(data: CheckoutFormValues, cartItems: CartItem[
       .select()
       .single();
 
-    if (orderError) throw orderError;
+    if (orderError) {
+      console.error("Order creation error:", orderError);
+      return null;
+    }
 
     // 2. Create order items
     const orderItems = cartItems.map((item) => ({
@@ -46,7 +49,10 @@ export async function createOrder(data: CheckoutFormValues, cartItems: CartItem[
       .from("order_items")
       .insert(orderItems);
 
-    if (orderItemsError) throw orderItemsError;
+    if (orderItemsError) {
+      console.error("Order items error:", orderItemsError);
+      return null;
+    }
 
     // 3. Create payment record with payment_method explicitly set to "upi"
     const { error: paymentError } = await supabase
@@ -58,7 +64,10 @@ export async function createOrder(data: CheckoutFormValues, cartItems: CartItem[
         payment_method: "upi", // Explicitly set payment_method
       });
 
-    if (paymentError) throw paymentError;
+    if (paymentError) {
+      console.error("Payment error:", paymentError);
+      return null;
+    }
 
     return orderData;
   } catch (error) {

@@ -1,16 +1,81 @@
 
 import { useParams } from "react-router-dom";
+import { useState, useEffect } from "react";
 import Layout from "@/components/layout/Layout";
 import { brands } from "@/data/brands";
-import { getProductsByBrand } from "@/data/products";
 import ProductGrid from "@/components/products/ProductGrid";
 import { Button } from "@/components/ui/button";
 import { ArrowRight } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 const BrandPage = () => {
   const { slug } = useParams<{ slug: string }>();
+  const [products, setProducts] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
   const brand = brands.find((b) => b.slug === slug);
   
+  // Map brand slug to Supabase brand name
+  const getBrandNameFromSlug = (slug?: string): string => {
+    switch(slug) {
+      case "sugar": return "sugar";
+      case "lakme": return "lakme";
+      case "glamup21": return "glamup21";
+      case "renee": return "renee";
+      default: return "";
+    }
+  };
+  
+  useEffect(() => {
+    const fetchProducts = async () => {
+      setLoading(true);
+      try {
+        const brandName = getBrandNameFromSlug(slug);
+        const { data, error } = await supabase
+          .from('products')
+          .select('*')
+          .eq('brand', brandName);
+        
+        if (error) {
+          console.error("Error fetching products:", error);
+          setProducts([]);
+        } else {
+          // Transform Supabase products to match our app's product interface
+          const transformedProducts = data.map(item => ({
+            id: item.id,
+            name: item.name,
+            slug: item.name.toLowerCase().replace(/ /g, '-'),
+            brandId: `brand-${item.brand}`,
+            price: item.price,
+            salePrice: null,
+            description: item.description,
+            benefits: [],
+            ingredients: "",
+            usage: "",
+            rating: item.rating || 4.0,
+            reviewCount: item.reviews_count || 100,
+            categoryId: `cat-${item.category}`,
+            tags: [item.category],
+            featured: item.featured,
+            bestSeller: false,
+            newArrival: false,
+            imageUrls: [item.image],
+            variants: []
+          }));
+          setProducts(transformedProducts);
+        }
+      } catch (error) {
+        console.error("Failed to fetch products:", error);
+        setProducts([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (brand) {
+      fetchProducts();
+    }
+  }, [slug]);
+
   if (!brand) {
     return (
       <Layout>
@@ -21,8 +86,6 @@ const BrandPage = () => {
       </Layout>
     );
   }
-  
-  const products = getProductsByBrand(brand.id);
   
   return (
     <Layout>
@@ -69,7 +132,13 @@ const BrandPage = () => {
           <h2 className="section-title mb-12 text-center">
             {brand.name} Products
           </h2>
-          <ProductGrid products={products} />
+          {loading ? (
+            <div className="text-center py-12">
+              <p className="text-lg">Loading products...</p>
+            </div>
+          ) : (
+            <ProductGrid products={products} />
+          )}
         </div>
       </div>
     </Layout>

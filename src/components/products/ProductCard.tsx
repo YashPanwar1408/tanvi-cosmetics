@@ -9,32 +9,24 @@ interface ProductCardProps {
 }
 
 export default function ProductCard({ product }: ProductCardProps) {
-  // Extract the product ID if it exists in the product object
+  // Function to get product ID - works for both mock data and DB products
   const getProductId = (product: Product) => {
-    // For database products, we just use the ID directly
+    // If it's already a UUID, use it directly
     if (product.id && product.id.includes('-')) {
       return product.id;
     }
-    // For mock data products, we need a mapping
-    const mockProductIdMap: Record<string, string> = {
-      "prod-001": "7813ee46-8454-4be1-baf1-bba82b03b845", // Matte Attack Liquid Lipstick
-      "prod-002": "0862347b-c327-476a-980a-41860f6e6fcc", // Eternal Silk Foundation
-      "prod-003": "31144b2e-e654-4a18-b1d7-2ec74b303c2a", // Ultra Defined Eyebrow Pencil
-      "prod-004": "d875d9ce-83d2-42fd-9d75-09be052f83c2", // Dewy Glow Highlighter
-      "prod-005": "6e34ce4a-10ae-4358-ada1-a22161468480", // Hydraboost Gel Moisturizer
-      "prod-006": "a7a84815-4d7a-4779-b32d-8602e7d59f18", // Smudge-Proof Mascara
-      "prod-007": "aec9f159-d064-4076-a24c-eee4f4413bdf", // Perfect Blend Sponge Set
-      "prod-008": "2070e08d-b4d5-40fd-8449-c4ea734e2fd2", // Radiance Boosting Face Serum
-    };
-    
-    return mockProductIdMap[product.id] || product.id;
+    return product.id;
   };
   
   return (
     <div className="product-card">
       <div className="product-card-image-container">
         <Link to={`/products/${getProductId(product)}`}>
-          <img src={product.imageUrls?.[0] || "/placeholder.svg"} alt={product.name} />
+          <img 
+            src={product.imageUrls?.[0] || product.image || "/placeholder.svg"} 
+            alt={product.name} 
+            className="h-60 w-full object-cover"
+          />
         </Link>
         
         <div className="product-card-actions">
@@ -64,8 +56,8 @@ export default function ProductCard({ product }: ProductCardProps) {
       </div>
       
       <div className="p-4">
-        <Link to={`/brands/${getBrandSlug(product.brandId)}`} className="text-xs font-medium text-gray-500 hover:text-primary transition-colors">
-          {getBrandName(product.brandId)}
+        <Link to={`/brands/${getBrandSlug(product.brandId) || product.brand}`} className="text-xs font-medium text-gray-500 hover:text-primary transition-colors">
+          {getBrandName(product.brandId) || product.brand?.toUpperCase()}
         </Link>
         
         <h3 className="font-medium mt-1 mb-2">
@@ -92,7 +84,7 @@ export default function ProductCard({ product }: ProductCardProps) {
                 <svg
                   key={i}
                   className={`w-3 h-3 ${
-                    i < Math.round(product.rating)
+                    i < Math.round(product.rating || 0)
                       ? "text-yellow-400"
                       : "text-gray-300"
                   }`}
@@ -103,7 +95,7 @@ export default function ProductCard({ product }: ProductCardProps) {
                 </svg>
               ))}
             </div>
-            <span className="text-xs text-gray-500 ml-1">({product.reviewCount})</span>
+            <span className="text-xs text-gray-500 ml-1">({product.reviewCount || 0})</span>
           </div>
         </div>
         
@@ -114,7 +106,9 @@ export default function ProductCard({ product }: ProductCardProps) {
 }
 
 // Helper functions to get brand information
-function getBrandName(brandId: string): string {
+function getBrandName(brandId?: string): string {
+  if (!brandId) return "Unknown Brand";
+  
   const brandMap: { [key: string]: string } = {
     "brand-sugar": "Sugar",
     "brand-lakme": "Lakme",
@@ -124,7 +118,9 @@ function getBrandName(brandId: string): string {
   return brandMap[brandId] || "Unknown Brand";
 }
 
-function getBrandSlug(brandId: string): string {
+function getBrandSlug(brandId?: string): string {
+  if (!brandId) return "unknown";
+  
   const brandMap: { [key: string]: string } = {
     "brand-sugar": "sugar",
     "brand-lakme": "lakme",
