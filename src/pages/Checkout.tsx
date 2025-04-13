@@ -7,6 +7,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/use-toast";
+import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -40,7 +41,7 @@ type CheckoutFormValues = z.infer<typeof checkoutSchema>;
 export default function CheckoutPage() {
   const { cartItems, cartTotal, clearCart } = useCart();
   const { user } = useAuth();
-  const { toast } = useToast();
+  const { toast: uiToast } = useToast();
   const navigate = useNavigate();
   const [isProcessing, setIsProcessing] = useState(false);
 
@@ -70,7 +71,7 @@ export default function CheckoutPage() {
 
   const createOrder = async (data: CheckoutFormValues) => {
     if (!user) {
-      toast({
+      uiToast({
         title: "Authentication required",
         description: "Please sign in to complete your order",
         variant: "destructive",
@@ -121,7 +122,7 @@ export default function CheckoutPage() {
           order_id: orderData.id,
           amount: cartTotal,
           status: "pending",
-          payment_method: "upi",
+          payment_method: "upi", // Always set the payment_method to "upi"
         });
 
       if (paymentError) throw paymentError;
@@ -129,18 +130,13 @@ export default function CheckoutPage() {
       return orderData;
     } catch (error) {
       console.error("Order creation error:", error);
-      toast({
-        title: "Checkout failed",
-        description: "There was a problem processing your order. Please try again.",
-        variant: "destructive",
-      });
       return null;
     }
   };
 
   const onSubmit = async (data: CheckoutFormValues) => {
     if (!data.screenshotConfirmation) {
-      toast({
+      uiToast({
         title: "Screenshot confirmation required",
         description: "Please confirm that you have shared the payment screenshot",
         variant: "destructive",
@@ -149,12 +145,28 @@ export default function CheckoutPage() {
     }
 
     setIsProcessing(true);
-    const order = await createOrder(data);
-    setIsProcessing(false);
-
-    if (order) {
-      await clearCart();
-      navigate(`/order-confirmation/${order.id}`);
+    
+    try {
+      const order = await createOrder(data);
+      
+      if (order) {
+        await clearCart();
+        toast.success("Order confirmed!", {
+          description: "Please check your orders to see order details."
+        });
+        navigate(`/order-confirmation/${order.id}`);
+      } else {
+        toast.error("Checkout failed", {
+          description: "There was a problem processing your order. Please try again."
+        });
+      }
+    } catch (error) {
+      console.error("Order processing error:", error);
+      toast.error("Checkout failed", {
+        description: "There was a problem processing your order. Please try again."
+      });
+    } finally {
+      setIsProcessing(false);
     }
   };
 

@@ -1,6 +1,7 @@
+
 import { useState, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Menu, X, Search, ShoppingBag, User, Heart } from "lucide-react";
+import { Menu, X, Search, ShoppingBag, User, Heart, ChevronDown } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,13 +15,20 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCart } from "@/contexts/CartContext";
+import { brands } from "@/data/brands";
+import {
+  NavigationMenu,
+  NavigationMenuContent,
+  NavigationMenuItem,
+  NavigationMenuLink,
+  NavigationMenuList,
+  NavigationMenuTrigger,
+  navigationMenuTriggerStyle,
+} from "@/components/ui/navigation-menu";
 
 const navigation = [
   { name: "Home", href: "/" },
   { name: "Shop", href: "/shop" },
-  { name: "Brands", href: "/brands" },
-  { name: "About", href: "/about" },
-  { name: "Contact", href: "/contact" },
 ];
 
 export default function Navbar() {
@@ -93,6 +101,31 @@ export default function Navbar() {
                   {item.name}
                 </Link>
               ))}
+              
+              <NavigationMenu>
+                <NavigationMenuList>
+                  <NavigationMenuItem>
+                    <NavigationMenuTrigger className="text-sm font-medium bg-transparent">Brands</NavigationMenuTrigger>
+                    <NavigationMenuContent>
+                      <ul className="grid w-[200px] gap-2 p-4">
+                        {brands.map((brand) => (
+                          <li key={brand.id}>
+                            <Link
+                              to={`/brands/${brand.slug}`}
+                              className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
+                            >
+                              <div className="text-sm font-medium leading-none">{brand.name}</div>
+                              <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
+                                {brand.description}
+                              </p>
+                            </Link>
+                          </li>
+                        ))}
+                      </ul>
+                    </NavigationMenuContent>
+                  </NavigationMenuItem>
+                </NavigationMenuList>
+              </NavigationMenu>
             </nav>
           )}
 
@@ -134,8 +167,8 @@ export default function Navbar() {
                   <DropdownMenuItem onClick={() => navigate("/orders")}>
                     Orders
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => navigate("/wishlist")}>
-                    Wishlist
+                  <DropdownMenuItem onClick={() => navigate("/favorites")}>
+                    Favorites
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={() => signOut()}>
@@ -149,7 +182,7 @@ export default function Navbar() {
               </Link>
             )}
 
-            <Link to="/wishlist" className="text-gray-600 hover:text-primary">
+            <Link to="/favorites" className="text-gray-600 hover:text-primary">
               <Heart size={20} />
             </Link>
 
@@ -206,6 +239,23 @@ export default function Navbar() {
                   {item.name}
                 </Link>
               ))}
+              
+              <div>
+                <p className="block text-lg font-medium mb-2">Brands</p>
+                <div className="pl-4 space-y-2">
+                  {brands.map((brand) => (
+                    <Link
+                      key={brand.id}
+                      to={`/brands/${brand.slug}`}
+                      className="block text-base"
+                      onClick={() => setOpen(false)}
+                    >
+                      {brand.name}
+                    </Link>
+                  ))}
+                </div>
+              </div>
+              
               <div className="pt-6 border-t">
                 {user ? (
                   <>
@@ -222,6 +272,13 @@ export default function Navbar() {
                       onClick={() => setOpen(false)}
                     >
                       My Orders
+                    </Link>
+                    <Link
+                      to="/favorites"
+                      className="block text-lg font-medium mb-4"
+                      onClick={() => setOpen(false)}
+                    >
+                      Favorites
                     </Link>
                     <Button
                       variant="outline"
@@ -252,4 +309,4 @@ export default function Navbar() {
       )}
     </header>
   );
-};
+}
