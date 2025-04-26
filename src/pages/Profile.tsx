@@ -48,6 +48,8 @@ interface Profile {
   zip: string | null;
 }
 
+const { user, profile } = useAuth();
+
 export default function ProfilePage() {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);

@@ -7,13 +7,18 @@ import { useToast } from "@/hooks/use-toast";
 interface AuthContextType {
   user: User | null;
   session: Session | null;
+  profile: any | null;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<void>;
   signUp: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
 }
 
+
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
+const [profile, setProfile] = useState<any>(null); 
+
+
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
@@ -22,23 +27,45 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const { toast } = useToast();
 
   useEffect(() => {
-    // Set up auth state listener first
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
+      async (_event, session) => {
         setSession(session);
         setUser(session?.user ?? null);
+        
+        if (session?.user) {
+          const { data: profileData } = await supabase
+            .from("user_profiles")
+            .select("*")
+            .eq("id", session.user.id)
+            .single();
+          setProfile(profileData);
+        } else {
+          setProfile(null);
+        }
       }
     );
-
-    // Then check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
+  
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
+  
+      if (session?.user) {
+        const { data: profileData } = await supabase
+          .from("user_profiles")
+          .select("*")
+          .eq("id", session.user.id)
+          .single();
+        setProfile(profileData);
+      } else {
+        setProfile(null);
+      }
+  
       setLoading(false);
     });
-
+  
     return () => subscription.unsubscribe();
   }, []);
+  
 
   const signIn = async (email: string, password: string) => {
     try {
@@ -116,9 +143,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider
-      value={{ user, session, loading, signIn, signUp, signOut }}
-    >
+    <AuthContext.Provider value={{ user, session, profile, loading, signIn, signUp, signOut }}>
       {children}
     </AuthContext.Provider>
   );

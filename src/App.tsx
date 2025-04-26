@@ -32,6 +32,7 @@ import Policy from "./pages/Policy";
 import Terms from "./pages/Terms";
 import Favorites from "./pages/Favorites";
 
+
 const queryClient = new QueryClient();
 
 const App = () => (
