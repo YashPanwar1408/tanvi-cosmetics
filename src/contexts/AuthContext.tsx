@@ -16,14 +16,12 @@ interface AuthContextType {
 
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
-const [profile, setProfile] = useState<any>(null); 
-
-
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  const [profile, setProfile] = useState<any>(null);
   const { toast } = useToast();
 
   useEffect(() => {
